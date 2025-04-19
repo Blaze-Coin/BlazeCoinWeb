@@ -1,21 +1,167 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Your BlazeCoin Wallet</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-</head>
-<body>
-  <div class="container">
-    <h2>Welcome, {{ username }}!</h2>
-    <p><a href="{{ url_for('login') }}">Log Out</a></p>
-    <hr>
-    <!-- You can embed your wallet generation/import/signing UI here -->
-    <h3>Wallet Generator and Management</h3>
-    <p>This section would include your wallet creation, import, and transaction signing features.</p>
-    <!-- For demo, you can simply link to your static wallet page if already built -->
-    <p><a href="/wallet.html">Open Wallet Interface</a></p>
-  </div>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Your Wallet{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>YourCoin Wallet Generator &amp; Transaction Signer</h2>
+  <p class="warning">
+    WARNING: Losing your passphrase means losing access to your wallet! Please back up your keys securely.
+  </p>
+
+  <!-- Generate Wallet -->
+  <section>
+    <label for="passphraseGen">Enter a passphrase to encrypt your private key:</label><br>
+    <input type="password" id="passphraseGen" placeholder="Your secret passphrase">
+    <div id="passStrength" class="meter">Passphrase strength: –</div><br>
+    <button id="generateWalletBtn">Generate Wallet</button>
+
+    <h4>Wallet JSON (Public Key, Salt, IV, &amp; Encrypted Private Key):</h4>
+    <pre id="walletOutput">--</pre>
+    <button id="downloadWalletBtn" style="display:none;">Download Wallet File</button>
+  </section>
+
+  <hr>
+
+  <!-- Import Wallet -->
+  <section>
+    <h3>Import Wallet</h3>
+    <label for="walletFileInput">Paste your exported wallet JSON here:</label><br>
+    <textarea id="walletFileInput" rows="6" placeholder='{"publicKey": {...}, "salt":"…", "iv":"…", "encryptedPrivateKey":"…"}'></textarea><br>
+    <label for="passphraseImport">Enter your passphrase:</label><br>
+    <input type="password" id="passphraseImport" placeholder="Your secret passphrase"><br>
+    <button id="importWalletBtn">Import Wallet</button>
+
+    <h4>Decrypted Private Key (JWK):</h4>
+    <pre id="decryptedKey">--</pre>
+  </section>
+
+  <hr>
+
+  <!-- Sign Transaction -->
+  <section>
+    <h3>Sign Transaction</h3>
+    <label for="transactionData">Transaction Data:</label><br>
+    <textarea id="transactionData" rows="4" placeholder="Enter transaction details…"></textarea><br>
+    <button id="signTxBtn">Sign Transaction</button>
+
+    <h4>Signature (hex):</h4>
+    <pre id="txSignature">--</pre>
+  </section>
+</div>
+
+<script>
+// Helper: ArrayBuffer ↔ hex
+function arrayBufferToHex(buffer) {
+  const bytes = new Uint8Array(buffer);
+  return Array.from(bytes).map(b=>('00'+b.toString(16)).slice(-2)).join('');
+}
+function hexToArrayBuffer(hex) {
+  const len = hex.length/2, arr = new Uint8Array(len);
+  for(let i=0;i<len;i++) arr[i]=parseInt(hex.substr(i*2,2),16);
+  return arr.buffer;
+}
+
+// Passphrase strength meter
+const passIn = document.getElementById('passphraseGen');
+const meter = document.getElementById('passStrength');
+passIn.addEventListener('input', ()=>{
+  const v = passIn.value;
+  let s = "Weak";
+  if(v.length>=12 && /[A-Z]/.test(v) && /[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v)) s = "Strong";
+  else if(v.length>=8) s = "Medium";
+  meter.textContent = "Passphrase strength: " + s;
+});
+
+// State
+let decryptedPrivateKeyJWK = null;
+
+// Generate Wallet
+async function generateWallet() {
+  if(!passIn.value) return alert("Enter a passphrase.");
+  // 1) Create ECDSA P-256 key pair
+  const kp = await crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"}, true, ["sign","verify"]);
+  const pubJWK = await crypto.subtle.exportKey("jwk", kp.publicKey);
+  const privJWK = await crypto.subtle.exportKey("jwk", kp.privateKey);
+
+  // 2) Derive AES‑GCM key
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv   = crypto.getRandomValues(new Uint8Array(12));
+  const baseKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(passIn.value),
+                                                "PBKDF2", false, ["deriveKey"]);
+  const aesKey = await crypto.subtle.deriveKey(
+    {name:"PBKDF2", salt, iterations:100000, hash:"SHA-256"},
+    baseKey, {name:"AES-GCM", length:256}, true, ["encrypt","decrypt"]
+  );
+
+  // 3) Encrypt private key
+  const pt = new TextEncoder().encode(JSON.stringify(privJWK));
+  const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, aesKey, pt);
+
+  // 4) Show wallet JSON
+  const wallet = {
+    publicKey: pubJWK,
+    salt: arrayBufferToHex(salt.buffer),
+    iv:   arrayBufferToHex(iv.buffer),
+    encryptedPrivateKey: arrayBufferToHex(ct)
+  };
+  document.getElementById("walletOutput").textContent = JSON.stringify(wallet, null, 2);
+  const dl = document.getElementById("downloadWalletBtn");
+  dl.style.display = "inline-block";
+  dl.onclick = ()=>{
+    const blob = new Blob([JSON.stringify(wallet,null,2)],{type:"application/json"});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = "blazecoin_wallet.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+}
+
+// Import & Decrypt
+async function importWallet() {
+  const txt = document.getElementById("walletFileInput").value;
+  const pw  = document.getElementById("passphraseImport").value;
+  if(!txt||!pw) return alert("Provide JSON and passphrase.");
+  let data;
+  try { data = JSON.parse(txt); } catch { return alert("Invalid JSON."); }
+
+  // Derive key
+  const saltBuf = hexToArrayBuffer(data.salt);
+  const ivBuf   = hexToArrayBuffer(data.iv);
+  const baseKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw),
+                                                "PBKDF2", false, ["deriveKey"]);
+  const aesKey  = await crypto.subtle.deriveKey(
+    {name:"PBKDF2", salt:new Uint8Array(saltBuf), iterations:100000, hash:"SHA-256"},
+    baseKey, {name:"AES-GCM", length:256}, true, ["encrypt","decrypt"]
+  );
+
+  // Decrypt
+  try {
+    const pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:new Uint8Array(ivBuf)},
+                                           aesKey, hexToArrayBuffer(data.encryptedPrivateKey));
+    const jwk = new TextDecoder().decode(pt);
+    document.getElementById("decryptedKey").textContent = jwk;
+    decryptedPrivateKeyJWK = JSON.parse(jwk);
+  } catch {
+    alert("Decryption failed. Wrong passphrase?");
+  }
+}
+
+// Sign TX
+async function signTransaction() {
+  if(!decryptedPrivateKeyJWK) return alert("Import your wallet first.");
+  const tx = document.getElementById("transactionData").value;
+  if(!tx) return alert("Enter transaction data.");
+  const priv = await crypto.subtle.importKey("jwk", decryptedPrivateKeyJWK,
+                                             {name:"ECDSA",namedCurve:"P-256"}, false, ["sign"]);
+  const sig = await crypto.subtle.sign({name:"ECDSA",hash:{name:"SHA-256"}},
+                                       priv, new TextEncoder().encode(tx));
+  document.getElementById("txSignature").textContent = arrayBufferToHex(sig);
+}
+
+document.getElementById("generateWalletBtn").addEventListener("click", generateWallet);
+document.getElementById("importWalletBtn").addEventListener("click", importWallet);
+document.getElementById("signTxBtn").addEventListener("click", signTransaction);
+</script>
+{% endblock %}
