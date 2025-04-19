@@ -7,7 +7,7 @@
 </head>
 <body>
   <nav>
-    <a href="{{ url_for('index') }}">Home</a> |
+    <a href="{{ url_for('home') }}">Home</a> |
     {% if session.get('username') %}
       <a href="{{ url_for('wallet') }}">Wallet</a> |
       <a href="{{ url_for('logout') }}">Log Out</a>
