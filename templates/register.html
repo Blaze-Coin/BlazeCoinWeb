@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BlazeCoin Registration</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Register for BlazeCoin</h2>
+    {% if message %}
+      <p class="warning">{{ message }}</p>
+    {% endif %}
+    <form action="{{ url_for('register') }}" method="post">
+      <input type="text" name="username" placeholder="Choose a username" required>
+      <input type="password" name="password" placeholder="Choose a password" required>
+      <button type="submit">Register</button>
+    </form>
+    <p>Already have an account? <a href="{{ url_for('login') }}">Sign In</a></p>
+  </div>
+</body>
+</html>

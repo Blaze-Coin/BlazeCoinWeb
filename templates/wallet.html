@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Your BlazeCoin Wallet</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h2>Welcome, {{ username }}!</h2>
+    <p><a href="{{ url_for('login') }}">Log Out</a></p>
+    <hr>
+    <!-- You can embed your wallet generation/import/signing UI here -->
+    <h3>Wallet Generator and Management</h3>
+    <p>This section would include your wallet creation, import, and transaction signing features.</p>
+    <!-- For demo, you can simply link to your static wallet page if already built -->
+    <p><a href="/wallet.html">Open Wallet Interface</a></p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BlazeCoin Dashboard</title>
+  <style>
+    /* Dark theme for the dashboard */
+    body {
+      margin: 0;
+      padding: 0;
+      background: #121212;
+      color: #e0e0e0;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #f9a825;
+    }
+    .stat {
+      margin: 20px 0;
+      font-size: 1.5em;
+      text-align: center;
+    }
+    .update {
+      background: #f9a825;
+      color: #121212;
+      padding: 10px;
+      border-radius: 5px;
+      width: 200px;
+      margin: 20px auto;
+      text-align: center;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>BlazeCoin Dashboard</h1>
+    <div class="stat">
+      Active Miners: <span id="activeMiners">Loading...</span>
+    </div>
+    <div class="stat">
+      Current Version: <span id="currentVersion">Loading...</span>
+    </div>
+    <div class="stat" id="updateAlert" style="display: none;">
+      New update available! <div class="update" onclick="updateMiner()">Update Now</div>
+    </div>
+  </div>
+
+  <script>
+    // Set your local/expected version here. Update this value when releasing a new version.
+    const localVersion = "1.0.0";  
+
+    const activeMinersEl = document.getElementById('activeMiners');
+    const currentVersionEl = document.getElementById('currentVersion');
+    const updateAlertEl = document.getElementById('updateAlert');
+
+    // Function to fetch active miner count from the server.
+    function fetchActiveMiners() {
+      fetch('/activeMiners')
+        .then(res => res.json())
+        .then(data => {
+          activeMinersEl.textContent = data.active_miners;
+        })
+        .catch(err => console.error("Error fetching active miners:", err));
+    }
+
+    // Function to check the current version from the server.
+    function checkVersion() {
+      fetch('/version')
+        .then(res => res.json())
+        .then(data => {
+          currentVersionEl.textContent = data.version;
+          if (data.version !== localVersion) {
+            updateAlertEl.style.display = "block";
+          } else {
+            updateAlertEl.style.display = "none";
+          }
+        })
+        .catch(err => console.error("Error checking version:", err));
+    }
+
+    // Function to simulate a miner update (for demo purposes, we simply reload).
+    function updateMiner() {
+      alert("A new miner version is available. The miner will now restart to update.");
+      location.reload();
+    }
+
+    // Polling the endpoints every 5 seconds.
+    setInterval(fetchActiveMiners, 5000);
+    setInterval(checkVersion, 5000);
+
+    // Initial calls on page load.
+    fetchActiveMiners();
+    checkVersion();
+  </script>
+</body>
+</html>
