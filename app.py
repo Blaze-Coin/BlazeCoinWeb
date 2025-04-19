@@ -107,7 +107,8 @@ def register():
             conn.close()
             return render_template("register.html", message="Username already exists. Please choose another.")
         password_hash = generate_password_hash(password)
-        conn.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password_hash))
+        pw_hash = generate_password_hash(password)  # PBKDF2 w/ salt, defaults
+        conn.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, pw_hash))
         conn.commit()
         conn.close()
         logger.info(f"Registered new user: {username}")
