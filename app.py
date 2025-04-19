@@ -122,9 +122,8 @@ def login():
         username = request.form["username"].strip()
         password = request.form["password"].strip()
         conn = get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-        conn.close()
-        if user and check_password_hash(user["password"], password):
+        row = conn.execute("SELECT password FROM users WHERE username=?", (username,)).fetchone()
+        if row and check_password_hash(row["password"], password):
             session["username"] = username
             logger.info(f"User {username} logged in.")
             return redirect(url_for("wallet"))
@@ -133,6 +132,15 @@ def login():
             return render_template("login.html", message="Invalid username or password.")
     return render_template("login.html")
 
+
+
+def verify_user(username, password):
+    conn = get_db_connection()
+    row = conn.execute("SELECT password FROM users WHERE username=?", (username,)).fetchone()
+    conn.close()
+    return row and check_password_hash(row["password"], password)
+
+
 @app.route("/wallet")
 def wallet():
     if "username" not in session:
@@ -140,25 +148,22 @@ def wallet():
     return render_template("wallet.html", username=session["username"])
 
 @app.route("/auth_miner", methods=["POST"])
-@limiter.limit("20 per minute")
 def auth_miner():
-    data = request.get_json()
-    if not data or "username" not in data or "password" not in data:
-        return jsonify({"status": "fail", "message": "Invalid request"}), 400
-    username = data["username"].strip()
-    password = data["password"].strip()
-    conn = get_db_connection()
-    user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-    conn.close()
-    if user and check_password_hash(user["password"], password):
-        return jsonify({"status": "success"})
-    else:
-        return jsonify({"status": "fail", "message": "Invalid credentials"}), 401
+    data = request.get_json(force=True)
+    user = data.get("username")
+    pw   = data.get("password")
+    if verify_user(user, pw):
+        return jsonify({"success": True}), 200
+    return jsonify({"success": False, "error": "Invalid credentials"}), 401
 
 
 
 
-
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("Logged out.", "success")
+    return redirect(url_for("home"))
 
 
 
