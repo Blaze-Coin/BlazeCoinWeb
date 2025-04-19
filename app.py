@@ -160,7 +160,7 @@ def wallet():
         flash("You must be logged in to view your wallet", "warning")
         return redirect(url_for("login"))
     # you can look up any existing on‐chain data here if you like
-    return render_template("wallet-interface.html")
+    return render_template("wallet.html")
 
 
 
