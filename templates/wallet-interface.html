@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Your Wallet{% endblock %}
+{% block content %}
+<div class="container">
+  <h2>YourCoin Wallet Generator & Transaction Signer</h2>
+  <p class="warning">
+    WARNING: Losing your passphrase means losing access to your wallet! Please back up your keys securely.
+  </p>
+
+  <!-- Generate Wallet -->
+  <div>
+    <label for="passphraseGen">Passphrase:</label>
+    <input type="password" id="passphraseGen" placeholder="Enter passphrase">
+    <div id="passStrength">Strength: –</div>
+    <button id="generateWalletBtn">Generate Wallet</button>
+    <h4>Wallet JSON (Public, Salt, IV, Encrypted Private):</h4>
+    <pre id="walletOutput">--</pre>
+    <button id="downloadWalletBtn" style="display:none">Download Wallet File</button>
+  </div>
+
+  <hr>
+
+  <!-- Import Wallet -->
+  <div>
+    <h3>Import Wallet</h3>
+    <textarea id="walletFileInput" rows="6" placeholder='Paste wallet JSON here'></textarea>
+    <input type="password" id="passphraseImport" placeholder="Your passphrase">
+    <button id="importWalletBtn">Import Wallet</button>
+    <h4>Decrypted Private Key (JWK):</h4>
+    <pre id="decryptedKey">--</pre>
+  </div>
+
+  <hr>
+
+  <!-- Sign Transaction -->
+  <div>
+    <h3>Sign Transaction</h3>
+    <textarea id="transactionData" rows="4" placeholder="Transaction data…"></textarea>
+    <button id="signTxBtn">Sign Transaction</button>
+    <h4>Signature (hex):</h4>
+    <pre id="txSignature">--</pre>
+  </div>
+</div>
+
+<script>
+// Paste your existing JS here: passphrase strength meter,
+// generateWallet(), importWallet(), signTransaction(),
+// plus the helper functions arrayBufferToHex, hexToArrayBuffer.
+</script>
+{% endblock %}
