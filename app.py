@@ -137,6 +137,33 @@ def auth_miner():
     else:
         return jsonify({"status": "fail", "message": "Invalid credentials"}), 401
 
+
+
+
+
+
+
+from flask import (
+    Flask, render_template, request, redirect, url_for,
+    session, jsonify, flash
+)
+import os
+
+app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY")
+
+# … your existing imports, database functions, login_required decorator, etc. …
+
+@app.route("/wallet")
+def wallet():
+    if "username" not in session:
+        flash("You must be logged in to view your wallet", "warning")
+        return redirect(url_for("login"))
+    # you can look up any existing on‐chain data here if you like
+    return render_template("wallet.html")
+
+
+
 # ---------- Additional Security Headers ----------
 @app.after_request
 def apply_security_headers(response):
