@@ -32,10 +32,11 @@ logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
 # Setup rate limiting
+# e.g. REDIS_URL = "redis://:password@hostname:6379/0"
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=RATE_LIMITS.split(","),
-    app=app
+    storage_uri=os.getenv("RATELIMIT_STORAGE_URL", "redis://localhost:6379/0"),
+    default_limits=os.getenv("RATE_LIMITS").split(",")
 )
 
 # ---------- Input Validation Functions ----------
