@@ -31,6 +31,22 @@ file_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
+
+
+
+from flask import session, redirect, url_for, flash
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You’ve been logged out.", "success")
+    return redirect(url_for("home"))
+
+
+
+
+
+
 # Setup rate limiting
 # e.g. REDIS_URL = "redis://:password@hostname:6379/0"
 limiter = Limiter(
