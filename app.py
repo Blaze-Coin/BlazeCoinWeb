@@ -173,12 +173,6 @@ def auth_miner():
 
 
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    flash("Logged out.", "success")
-    return redirect(url_for("home"))
-
 
 
 
