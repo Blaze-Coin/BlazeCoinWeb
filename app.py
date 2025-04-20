@@ -83,6 +83,20 @@ def init_db():
     conn.close()
 
 # ---------- Routes ----------
+
+
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You’ve been logged out.", "success")
+    return redirect(url_for("home"))
+
+
+
+
+
 @app.route("/")
 def home():
     if "username" in session:
