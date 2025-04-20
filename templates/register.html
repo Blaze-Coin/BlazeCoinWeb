@@ -1,22 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>BlazeCoin Registration</title>
-  <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-  <div class="container">
-    <h2>Register for BlazeCoin</h2>
-    {% if message %}
-      <p class="warning">{{ message }}</p>
-    {% endif %}
-    <form action="{{ url_for('register') }}" method="post">
-      <input type="text" name="username" placeholder="Choose a username" required>
-      <input type="password" name="password" placeholder="Choose a password" required>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Register — BlazeCoin</title>
+  </head>
+  <body>
+    <h1>Create your BlazeCoin account</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul>
+          {% for cat, msg in messages %}
+            <li style="color: {{ 'green' if cat=='success' else 'red' }};">{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post">
+      <label>Username:<br>
+        <input name="username" required>
+      </label><br><br>
+      <label>Password:<br>
+        <input name="password" type="password" required>
+      </label><br><br>
       <button type="submit">Register</button>
     </form>
-    <p>Already have an account? <a href="{{ url_for('login') }}">Sign In</a></p>
-  </div>
-</body>
+  </body>
 </html>
