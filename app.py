@@ -50,10 +50,19 @@ def logout():
 
 # Setup rate limiting
 # e.g. REDIS_URL = "redis://:password@hostname:6379/0"
+# at top of file:
+import os
+
+# …
+
+# just before you construct the Limiter:
+raw = os.getenv("RATE_LIMITS", "200 per day,50 per hour")
+limits = [r.strip() for r in raw.split(",") if r.strip()]
+
 limiter = Limiter(
+    app,
     key_func=get_remote_address,
-    storage_uri=os.getenv("RATELIMIT_STORAGE_URL", "redis://localhost:6379/0"),
-    default_limits=os.getenv("RATE_LIMITS").split(",")
+    default_limits=limits
 )
 
 # ---------- Input Validation Functions ----------
